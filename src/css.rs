@@ -2,7 +2,7 @@ use combine::{
     choice,
     error::StreamError,
     many, many1, optional,
-    parser::char::{self, char, letter, newline, space, spaces},
+    parser::char::{self, char, letter, newline, space, spaces, string},
     sep_by, sep_end_by, ParseError, Parser, Stream,
 };
 
@@ -124,8 +124,51 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    todo!("you need to implement this");
-    (char(' '),).map(|_| SimpleSelector::UniversalSelector)
+    let universal_selector = char('*').map(|_| SimpleSelector::UniversalSelector);
+
+    let class_selector = (
+        char('.'),
+        many1(letter())
+    )
+        .map(|(_, class_name)| SimpleSelector::ClassSelector{class_name});
+
+    let type_or_attribute_selector = (
+        many1(letter()).skip(spaces()),
+        optional(
+            (
+                char('[').skip(spaces()),
+                many1(letter()),
+                choice((string("="), string("~="))),
+                many1(letter()),
+                char(']'),
+            )
+        )
+    )
+        .and_then(|(tag_name, opts)| match opts {
+            Some((_, attribute, op, value, _)) => {
+                let op = match op {
+                    "=" => AttributeSelectorOp::Eq,
+                    "~=" => AttributeSelectorOp::Contain,
+                    _ => {
+                        return Err(<Input::Error as combine::error::ParseError<
+                            char,
+                            Input::Range,
+                            Input::Position,
+                        >>::StreamError::message_static_message(
+                            "invalid attribute selector op",
+                        ))
+                    }
+                };
+                Ok(SimpleSelector::AttributeSelector{tag_name, attribute, op, value})
+            }
+            None => Ok(SimpleSelector::TypeSelector{tag_name})
+        });
+
+    choice((
+        universal_selector,
+        class_selector,
+        type_or_attribute_selector,
+    ))
 }
 
 fn declarations<Input>() -> impl Parser<Input, Output = Vec<Declaration>>
