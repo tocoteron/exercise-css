@@ -115,8 +115,10 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    todo!("you need to implement this");
-    (char(' '),).map(|_| vec![])
+    sep_by(
+        simple_selector().skip(spaces()),
+        char(',').skip(spaces()),
+    )
 }
 
 fn simple_selector<Input>() -> impl Parser<Input, Output = SimpleSelector>
