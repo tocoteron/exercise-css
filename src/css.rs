@@ -2,7 +2,7 @@ use combine::{
     choice,
     error::StreamError,
     many, many1, optional,
-    parser::char::{self, char, letter, newline, space},
+    parser::char::{self, char, letter, newline, space, spaces},
     sep_by, sep_end_by, ParseError, Parser, Stream,
 };
 
@@ -133,8 +133,10 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    todo!("you need to implement this");
-    (char(' '),).map(|_| vec![])
+    sep_end_by(
+        declaration().skip(spaces()),
+        char(';').skip(spaces()),
+    )
 }
 
 fn declaration<Input>() -> impl Parser<Input, Output = Declaration>
@@ -142,11 +144,12 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    todo!("you need to implement this");
-    (char(' '),).map(|_| Declaration {
-        name: "".into(),
-        value: CSSValue::Keyword("".into()),
-    })
+    (
+        many1(letter()).skip(spaces()),
+        char(':').skip(spaces()),
+        css_value(),
+    )
+        .map(|(k, _, v)| Declaration{name: k, value: v})
 }
 
 fn css_value<Input>() -> impl Parser<Input, Output = CSSValue>
@@ -154,8 +157,7 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    todo!("you need to implement this");
-    (char(' '),).map(|_| CSSValue::Keyword("".into()))
+    many1(letter()).map(|s| CSSValue::Keyword(s))
 }
 
 #[cfg(test)]
@@ -387,5 +389,24 @@ mod tests {
         );
 
         assert!(declaration().parse("aaaaa").is_err())
+    }
+
+    #[test]
+    fn test_css_value() {
+        assert_eq!(
+            css_value().parse("hoge"),
+            Ok((
+                CSSValue::Keyword("hoge".to_string()),
+                ""
+            ))
+        );
+
+        assert_eq!(
+            css_value().parse("hoge "),
+            Ok((
+                CSSValue::Keyword("hoge".to_string()),
+                " "
+            ))
+        );
     }
 }
