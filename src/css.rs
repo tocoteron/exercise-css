@@ -2,7 +2,7 @@ use combine::{
     choice,
     error::StreamError,
     many, many1, optional,
-    parser::char::{self, char, letter, newline, space, spaces, string},
+    parser::char::{self, char, letter, newline, space, string},
     sep_by, sep_end_by, ParseError, Parser, Stream,
 };
 
@@ -108,9 +108,9 @@ where
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
     (
-        selectors().skip(spaces()),
-        char('{').skip(spaces()),
-        declarations().skip(spaces()),
+        selectors().skip(whitespaces()),
+        char('{').skip(whitespaces()),
+        declarations().skip(whitespaces()),
         char('}'),
     )
         .map(|(selectors, _, declarations, _)| Rule{selectors, declarations})
@@ -122,8 +122,8 @@ where
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
     sep_by(
-        simple_selector().skip(spaces()),
-        char(',').skip(spaces()),
+        simple_selector().skip(whitespaces()),
+        char(',').skip(whitespaces()),
     )
 }
 
@@ -141,10 +141,10 @@ where
         .map(|(_, class_name)| SimpleSelector::ClassSelector{class_name});
 
     let type_or_attribute_selector = (
-        many1(letter()).skip(spaces()),
+        many1(letter()).skip(whitespaces()),
         optional(
             (
-                char('[').skip(spaces()),
+                char('[').skip(whitespaces()),
                 many1(letter()),
                 choice((string("="), string("~="))),
                 many1(letter()),
@@ -185,8 +185,8 @@ where
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
     sep_end_by(
-        declaration().skip(spaces()),
-        char(';').skip(spaces()),
+        declaration().skip(whitespaces()),
+        char(';').skip(whitespaces()),
     )
 }
 
@@ -196,8 +196,8 @@ where
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
     (
-        many1(letter()).skip(spaces()),
-        char(':').skip(spaces()),
+        many1(letter()).skip(whitespaces()),
+        char(':').skip(whitespaces()),
         css_value(),
     )
         .map(|(k, _, v)| Declaration{name: k, value: v})
