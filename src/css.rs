@@ -82,6 +82,7 @@ pub enum CSSValue {
     Keyword(String),
 }
 
+
 pub fn parse(raw: &str) -> Stylesheet {
     rules()
         .parse(raw)
@@ -94,8 +95,11 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    todo!("you need to implement this");
-    (char(' ')).map(|_| vec![])
+    (
+        whitespaces(),
+        many(rule().skip(whitespaces()))
+    )
+        .map(|(_, rules)| rules)
 }
 
 fn rule<Input>() -> impl Parser<Input, Output = Rule>
@@ -205,6 +209,14 @@ where
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
     many1(letter()).map(|s| CSSValue::Keyword(s))
+}
+
+fn whitespaces<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    many::<String, _, _>(space().or(newline()))
 }
 
 #[cfg(test)]
